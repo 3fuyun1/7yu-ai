@@ -1,0 +1,850 @@
+<html lang="zh-TW"><plasmo-csui></plasmo-csui><plasmo-csui></plasmo-csui><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7yu - 一键语音对话</title>
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Microsoft JhengHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* 容器样式 */
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 标题样式 */
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+        }
+
+        /* 输入框和按钮样式 */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        #question {
+            flex: 1;
+            padding: 12px 50px 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 1rem;
+            line-height: 1.5;
+            resize: none;
+            overflow-y: auto;
+            max-height: 120px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            font-family: 'Microsoft JhengHei', sans-serif;
+        }
+
+        #question:focus {
+            border-color: #4a90e2;
+            box-shadow: 0 2px 12px rgba(74, 144, 226, 0.3);
+            outline: none;
+        }
+
+        .submit-button {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 8px 16px;
+            background-color: #4a90e2;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            font-family: 'Microsoft JhengHei', sans-serif;
+        }
+
+        .submit-button:hover {
+            background-color: #3a7bc8;
+        }
+
+        /* 圆形语音按钮样式 */
+        .voice-button {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4a90e2, #8b66ff);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px auto;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .voice-button:hover {
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+            transform: scale(1.05);
+        }
+
+        .voice-button.listening {
+            background: linear-gradient(135deg, #ff6b9d, #ff8a65);
+            animation: pulse 1.5s infinite;
+        }
+
+        .voice-button svg {
+            width: 30px;
+            height: 30px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 107, 157, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(255, 107, 157, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 107, 157, 0); }
+        }
+
+        /* 机器人回复样式 */
+        #response {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            line-height: 1.7;
+            color: #2c3e50;
+            min-height: 120px;
+            position: relative;
+            border: 1px solid #e9ecef;
+        }
+
+        /* 加载动画 */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4a90e2;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* 历史记录样式 */
+        .history {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 15px;
+            border: 1px solid #e9ecef;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            margin-bottom: 12px;
+            padding: 12px;
+            background-color: #fff;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .history-item.user {
+            color: #4a90e2;
+            border-left: 4px solid #4a90e2;
+        }
+
+        .history-item.ai {
+            color: #6c757d;
+            border-left: 4px solid #8b66ff;
+        }
+
+        /* 语音控制按钮 */
+        .voice-control {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .voice-control button {
+            padding: 8px 16px;
+            background-color: #8b66ff;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            font-family: 'Microsoft JhengHei', sans-serif;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .voice-control button:hover {
+            background-color: #7a55ee;
+            transform: translateY(-2px);
+        }
+
+        /* 语音识别状态提示 */
+        #voice-status {
+            margin-top: 10px;
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+            min-height: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* 自动监听提示 */
+        .auto-listen-indicator {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 0.9rem;
+            color: #8b66ff;
+            animation: fadeInOut 2s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        /* 永久对话模式提示 */
+        .permanent-mode {
+            text-align: center;
+            margin: 10px 0;
+            padding: 8px;
+            background-color: #f0f8ff;
+            border-radius: 15px;
+            color: #4a90e2;
+            font-size: 0.9rem;
+            border: 1px solid #d1e7ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* 页脚样式 */
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: #4a90e2;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        footer a:hover {
+            color: #8b66ff;
+            text-decoration: underline;
+        }
+
+        /* 手机端样式 */
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+                width: 95%;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .voice-button {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .voice-button svg {
+                width: 25px;
+                height: 25px;
+            }
+            
+            #response, .history {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>7yu - 智能语音对话</h1>
+        <div class="input-group">
+            <textarea id="question" placeholder="您说的话会显示在这里..." oninput="adjustTextareaHeight()"></textarea>
+            <button class="submit-button" onclick="sendRequest()">上传</button>
+        </div>
+        <div id="voice-status">点击下方按钮开始永久对话模式~</div>
+        
+        <!-- 自动监听指示器 -->
+        <div id="autoListenIndicator" class="auto-listen-indicator" style="display: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+            正在自动聆听中...
+        </div>
+        
+        <!-- 永久对话模式提示 -->
+        <div id="permanentModeIndicator" class="permanent-mode" style="display: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            永久对话模式已激活 - 直接说话即可
+        </div>
+        
+        <button class="voice-button" id="voiceButton" onclick="toggleVoiceRecognition()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+        </button>
+        <div>
+            <h2>7yu回复：</h2>
+            <div id="response">
+                <div class="loader" id="loader"></div>
+                <p id="response-text">哈喽~我是7yu，点击按钮开始永久对话模式吧！</p>
+            </div>
+            <div class="voice-control">
+                <button id="speakButton" onclick="speakResponse()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                    朗读回复
+                </button>
+                <button id="stopSpeakButton" onclick="stopSpeaking()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;">
+                        <rect x="6" y="4" width="4" height="16"></rect>
+                        <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                    停止朗读
+                </button>
+            </div>
+        </div>
+        <div class="history">
+            <h2>对话历史记录：</h2>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    
+
+    <script>
+        // 初始化变量
+        let history = [];
+        let recognition = null;
+        let speechSynthesis = window.speechSynthesis;
+        let currentUtterance = null;
+        let taiwanFemaleVoice = null;
+        let isAutoSpeaking = false;
+        let silenceTimer = null;
+        let isAutoListening = false;
+        let isPermanentMode = false;
+        let isFirstInteraction = true;
+
+        // 初始化语音合成
+        function initVoices() {
+            return new Promise((resolve) => {
+                const voices = speechSynthesis.getVoices();
+                if (voices.length > 0) {
+                    // 优先寻找台湾女声
+                    taiwanFemaleVoice = voices.find(voice => 
+                        voice.lang.includes('zh-TW') && 
+                        (voice.name.includes('Female') || voice.name.includes('女') || voice.name.includes('Mei') || voice.name.includes('Ting'))
+                    );
+                    
+                    // 如果没有台湾女声，则寻找其他中文女声
+                    if (!taiwanFemaleVoice) {
+                        taiwanFemaleVoice = voices.find(voice => 
+                            voice.lang.includes('zh') && 
+                            (voice.name.includes('Female') || voice.name.includes('女'))
+                        );
+                    }
+                    resolve();
+                } else {
+                    speechSynthesis.onvoiceschanged = function() {
+                        const voices = speechSynthesis.getVoices();
+                        taiwanFemaleVoice = voices.find(voice => 
+                            voice.lang.includes('zh-TW') && 
+                            (voice.name.includes('Female') || voice.name.includes('女'))
+                        );
+                        resolve();
+                    };
+                }
+            });
+        }
+
+        // 初始化语音识别
+        function initVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                updateVoiceStatus("您的浏览器不支持语音识别哦~请使用Chrome或Edge浏览器啦！");
+                document.getElementById('voiceButton').disabled = true;
+                return;
+            }
+            
+            recognition = new SpeechRecognition();
+            recognition.lang = 'zh-TW'; // 使用台湾中文
+            recognition.interimResults = true;
+            recognition.continuous = true; // 连续识别模式
+            
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                const questionInput = document.getElementById('question');
+                if (finalTranscript) {
+                    questionInput.value = finalTranscript;
+                    updateVoiceStatus("识别完成，正在思考...");
+                    resetSilenceTimer();
+                    
+                    // 自动发送请求
+                    sendRequest().then(() => {
+                        // 请求完成后继续保持监听状态
+                        if (isPermanentMode) {
+                            setTimeout(() => {
+                                questionInput.value = '';
+                                updateVoiceStatus("请继续说话...");
+                                resetSilenceTimer();
+                            }, 1000);
+                        }
+                    });
+                } else if (interimTranscript) {
+                    questionInput.value = interimTranscript;
+                    updateVoiceStatus("正在聆听...");
+                }
+                adjustTextareaHeight();
+            };
+            
+            recognition.onerror = (event) => {
+                console.error('语音识别错误:', event.error);
+                let errorMsg = "哎呀，出错了啦~";
+                switch(event.error) {
+                    case 'no-speech':
+                        errorMsg = "没有检测到语音哦~再说一次好吗？";
+                        break;
+                    case 'audio-capture':
+                        errorMsg = "麦克风有问题耶~检查一下好吗？";
+                        break;
+                    case 'not-allowed':
+                        errorMsg = "麦克风权限被拒绝咯~要允许才能用啦！";
+                        break;
+                }
+                updateVoiceStatus(errorMsg);
+                
+                // 永久模式下5秒后重试
+                if (isPermanentMode) {
+                    setTimeout(startPermanentMode, 5000);
+                } else {
+                    stopAutoListening();
+                }
+            };
+            
+            recognition.onend = () => {
+                if (isPermanentMode) {
+                    // 永久模式下自动重新开始监听
+                    setTimeout(startPermanentMode, 1000);
+                }
+            };
+        }
+
+        // 更新语音状态提示
+        function updateVoiceStatus(message) {
+            document.getElementById('voice-status').textContent = message;
+        }
+
+        // 启动永久对话模式
+        function startPermanentMode() {
+            isPermanentMode = true;
+            isAutoListening = true;
+            
+            document.getElementById('permanentModeIndicator').style.display = 'flex';
+            document.getElementById('autoListenIndicator').style.display = 'flex';
+            document.getElementById('voiceButton').classList.add('listening');
+            updateVoiceStatus("无障碍对话模式已激活，请直接说话...");
+            
+            // 隐藏手动控制按钮
+            document.querySelector('.voice-control').style.display = 'none';
+            
+            resetSilenceTimer();
+            
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error('启动失败:', e);
+                updateVoiceStatus("启动失败，请重试~");
+                stopPermanentMode();
+            }
+        }
+
+        // 停止永久对话模式
+        function stopPermanentMode() {
+            isPermanentMode = false;
+            isAutoListening = false;
+            
+            document.getElementById('permanentModeIndicator').style.display = 'none';
+            document.getElementById('autoListenIndicator').style.display = 'none';
+            document.getElementById('voiceButton').classList.remove('listening');
+            updateVoiceStatus("已退出永久对话模式");
+            
+            // 显示手动控制按钮
+            document.querySelector('.voice-control').style.display = 'flex';
+            
+            if (silenceTimer) {
+                clearTimeout(silenceTimer);
+                silenceTimer = null;
+            }
+            
+            if (recognition) {
+                recognition.stop();
+            }
+        }
+
+        // 切换语音识别状态
+        function toggleVoiceRecognition() {
+            if (isPermanentMode) {
+                stopPermanentMode();
+            } else {
+                startPermanentMode();
+            }
+        }
+
+        // 重置静音计时器
+        function resetSilenceTimer() {
+            if (silenceTimer) clearTimeout(silenceTimer);
+            
+            // 永久模式下延长静音检测时间
+            const timeout = isPermanentMode ? 3000 : 2000;
+            
+            silenceTimer = setTimeout(() => {
+                if (isPermanentMode && document.getElementById('question').value.trim()) {
+                    sendRequest();
+                }
+            }, timeout);
+        }
+
+        // 朗读回复内容（台湾腔女声带情感）
+        function speakResponse() {
+            const responseText = document.getElementById('response-text').innerText;
+            if (!responseText) return;
+            
+            stopSpeaking();
+            
+            currentUtterance = new SpeechSynthesisUtterance();
+            currentUtterance.lang = 'zh-TW'; // 设置为台湾中文
+            
+            // 添加台湾腔特色语气词和情感表达
+            let textWithEmotion = addTaiwanEmotion(responseText);
+            
+            // 设置语音参数
+            currentUtterance.text = textWithEmotion;
+            currentUtterance.rate = 0.92; // 稍慢的语速更显温柔
+            currentUtterance.pitch = 1.25; // 稍高的音调更像女声
+            currentUtterance.volume = 1;
+            
+            // 使用找到的台湾女声
+            if (taiwanFemaleVoice) {
+                currentUtterance.voice = taiwanFemaleVoice;
+            }
+            
+            // 添加情感表达 - 通过插入停顿和调整语调
+            currentUtterance.onboundary = function(event) {
+                if (event.name === 'sentence') {
+                    // 在句尾添加微小停顿增强情感
+                    currentUtterance.rate = 0.88;
+                    
+                    // 随机添加情感波动
+                    if (Math.random() > 0.6) {
+                        currentUtterance.pitch = 1.15 + Math.random() * 0.3;
+                    }
+                } else if (event.name === 'word') {
+                    // 在某些词上添加强调
+                    const currentText = currentUtterance.text.substring(0, event.charIndex);
+                    const currentWord = currentText.split(' ').pop() || currentText.split('').pop();
+                    
+                    if (['啦', '喔', '耶', '嘛', '捏', '齁'].includes(currentWord)) {
+                        currentUtterance.pitch = 1.3;
+                        currentUtterance.rate = 0.85;
+                    }
+                }
+            };
+            
+            // 开始朗读
+            isAutoSpeaking = true;
+            speechSynthesis.speak(currentUtterance);
+            
+            currentUtterance.onend = function() {
+                isAutoSpeaking = false;
+                currentUtterance = null;
+                
+                // 永久模式下自动准备下一次聆听
+                if (isPermanentMode) {
+                    setTimeout(() => {
+                        document.getElementById('question').value = '';
+                        updateVoiceStatus("请继续说话...");
+                        resetSilenceTimer();
+                    }, 1000);
+                }
+            };
+            
+            currentUtterance.onerror = function(event) {
+                console.error('语音合成错误:', event);
+                isAutoSpeaking = false;
+                currentUtterance = null;
+            };
+        }
+
+        // 添加台湾腔情感表达
+        function addTaiwanEmotion(text) {
+            // 添加台湾特色语气词
+            const taiwanExpressions = ['啦', '喔', '耶', '嘛', '捏', '齁'];
+            const expression = taiwanExpressions[Math.floor(Math.random() * taiwanExpressions.length)];
+            
+            // 在句尾随机添加语气词
+            if (Math.random() > 0.4 && !text.endsWith('~') && !text.endsWith('!') && !text.endsWith('?')) {
+                text = text.replace(/[。.]$/, expression + '$&');
+            }
+            
+            // 替换一些词汇为更台湾化的表达
+            const taiwanPhrases = {
+                '吗': '吗~',
+                '呢': '呢~',
+                '啊': '啊~',
+                '的': '的捏',
+                '了': '了啦',
+                '吧': '吧~',
+                '你好': '哈喽~',
+                '谢谢': '谢谢你喔',
+                '不客气': '不会啦~',
+                '好的': '好哒~',
+                '明白': '了解~',
+                '知道': '知道啦'
+            };
+            
+            for (const [key, value] of Object.entries(taiwanPhrases)) {
+                if (Math.random() > 0.7) {
+                    text = text.replace(new RegExp(key, 'g'), value);
+                }
+            }
+            
+            // 添加一些表情符号增强情感
+            const emojis = ['(◕‿◕✿)', '(ﾉ◕ヮ◕)ﾉ', '♡', '～', '✨', '٩(◕‿◕｡)۶'];
+            if (Math.random() > 0.5) {
+                text += ' ' + emojis[Math.floor(Math.random() * emojis.length)];
+            }
+            
+            return text;
+        }
+
+        // 停止朗读
+        function stopSpeaking() {
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+            }
+            isAutoSpeaking = false;
+            currentUtterance = null;
+        }
+
+        // 调整输入框高度
+        function adjustTextareaHeight() {
+            const textarea = document.getElementById('question');
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+        }
+
+        // 发送请求到AI
+        function sendRequest() {
+            // 显示加载动画
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('response-text').innerText = '';
+
+            // 获取用户输入的问题
+            const question = document.getElementById('question').value;
+
+            // 将用户问题添加到历史记录
+            addToHistory('user', question);
+
+            // 配置API请求参数
+            const appid = "087d3f292ea349429a074b683c657c8d"; // 您的机器人ID
+            const userid = "user123"; // 自定义用户ID
+            const spoken = encodeURIComponent(question);
+            const url = `https://api.sizhi.com/chat?appid=${appid}&userid=${userid}&spoken=${spoken}`;
+
+            // 发起GET请求
+            return fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 0) {
+                        let aiResponse = data.data.info.text;
+                        
+                        // 添加一些台湾腔表达
+                        if (Math.random() > 0.5) {
+                            aiResponse = addTaiwanEmotion(aiResponse);
+                        }
+                        
+                        document.getElementById('response-text').innerText = aiResponse;
+                        addToHistory('ai', aiResponse);
+                        
+                        // 自动朗读回复
+                        return initVoices().then(() => {
+                            speakResponse();
+                            return true;
+                        });
+                    } else {
+                        document.getElementById('response-text').innerText = "哎呀，请求失败啦：" + data.message;
+                        return false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('response-text').innerText = "糟糕，出错咯：" + error.message;
+                    return false;
+                })
+                .finally(() => {
+                    document.getElementById('loader').style.display = 'none';
+                });
+        }
+
+        // 添加到历史记录
+        function addToHistory(type, text) {
+            const historyItem = document.createElement('div');
+            historyItem.classList.add('history-item', type);
+            
+            // 添加头像和样式
+            if (type === 'user') {
+                historyItem.innerHTML = `
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:30px;height:30px;border-radius:50%;background-color:#4a90e2;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">你</div>
+                    <div>${text}</div>
+                </div>`;
+            } else {
+                historyItem.innerHTML = `
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:30px;height:30px;border-radius:50%;background-color:#8b66ff;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">7yu</div>
+                    <div>${text}</div>
+                </div>`;
+            }
+
+            const historyList = document.getElementById('history-list');
+            historyList.appendChild(historyItem);
+            historyList.scrollTop = historyList.scrollHeight;
+
+            history.push({ type, text });
+        }
+
+        // 清空历史记录
+        function clearHistory() {
+            document.getElementById('history-list').innerHTML = '';
+            document.getElementById('question').value = '';
+            document.getElementById('response-text').innerText = '哈喽~我是7yu，点击按钮开始永久对话模式吧！(◕‿◕✿)';
+            history = [];
+            stopSpeaking();
+        }
+
+        // 初始化应用
+        async function init() {
+            await initVoices();
+            initVoiceRecognition();
+            
+            // 设置默认欢迎语
+            setTimeout(() => {
+                if (history.length === 0) {
+                    document.getElementById('response-text').innerText = '哈喽~我是7yu，点击按钮开始永久对话模式吧！(◕‿◕✿)';
+                }
+            }, 500);
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('load', function() {
+            init();
+        });
+
+        // 监听键盘事件
+        document.addEventListener('keydown', function(event) {
+            // Ctrl+Enter 发送消息
+            if (event.ctrlKey && event.key === 'Enter') {
+                sendRequest();
+            }
+            
+            // Esc 停止朗读
+            if (event.key === 'Escape') {
+                stopSpeaking();
+            }
+        });
+    </script>
+
+<script>window.Dcloud_Html_preview_filename = "d%3A%5C0du%5C7yu%5Cws%5Cindex.html"</script><script>document.write('<script src="//' + (location.host || 'localhost').split(':')[0] + ':35929/livereload.js?snipver=1"></' + 'script>')</script><script src="//127.0.0.1:35929/livereload.js?snipver=1"></script>
+	<script>
+	class reloadPlugin {
+		reload(path, options){
+			return decodeURIComponent(Dcloud_Html_preview_filename) !== path;
+		}
+	}
+	if (LiveReload){
+		LiveReload.addPlugin(reloadPlugin)
+	}
+
+	</script>
+	</body></html>
